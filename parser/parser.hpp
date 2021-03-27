@@ -4,14 +4,14 @@
 #include <vector>
 #include <string>
 
-class Parser// parser
+class parser
 {
 public:
-    void get_company_info(std::string& buffer);//vector pair <string(name_company), url(чистый url)>
+    std::vector<std::pair<std::string, std::string>> get_companies_info(const std::string& buffer);
 
 private:
-    //pair<name, url> parse_company_name_url(buffer)
-    std::vector<std::string> container_;
+    static std::pair<std::string, std::string> parse_company_name_url(const std::string& buffer);
+    std::vector<std::pair<std::string, std::string>> container_;
 };
 
 
