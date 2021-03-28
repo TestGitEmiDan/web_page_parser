@@ -1,6 +1,8 @@
 #include <sstream>
+#include <logger.hpp>
 
 #include "parser.hpp"
+#include "../downloder/web_downloader.hpp"
 
 std::vector<std::pair<std::string, std::string>> parser::get_companies_info(const std::string& buffer)
 {
@@ -87,3 +89,247 @@ std::pair<std::string, std::string> parser::parse_company_name_url(const std::st
 
     return {name_company, url};
 }
+
+std::string parser::get_company_info(const std::string url)
+{
+    std::string main_url = "https://www.b2b-center.ru" + url;  
+    std::string company_info;                                   
+
+    web_downloder web;
+    web.init();
+
+    web.download(main_url, company_info);
+
+    if (company_info.empty())
+    {
+        return {};
+    }
+
+    const std::string start_string = "<td class=\"small\">";
+    const std::string end_string = "</td>";
+    const std::string start_description = "<td>";
+
+    std::string short_title;
+
+    const uint64_t pos_begin_short_title = company_info.find(start_string) + start_string.size();
+
+    if (pos_begin_short_title == std::string::npos)
+    {
+        return {};
+    }
+
+    const uint64_t pos_end_short_title = company_info.find(end_string, pos_begin_short_title);
+
+    if (pos_end_short_title == std::string::npos)
+    {
+        return {};
+    }
+
+    short_title = company_info.substr(pos_begin_short_title, pos_end_short_title - pos_begin_short_title);
+
+    std::string short_title_name;
+
+    const uint64_t pos_begin_short_title_name = company_info.find(start_description, pos_end_short_title) + start_description.size();
+
+    if (pos_begin_short_title_name == std::string::npos)
+    {
+        return {};
+    }
+
+    const uint64_t pos_end_short_title_name = company_info.find(end_string, pos_begin_short_title_name);
+
+    if (pos_end_short_title_name == std::string::npos)
+    {
+        return {};
+    }
+
+    short_title_name = company_info.substr(pos_begin_short_title_name, pos_end_short_title_name - pos_begin_short_title_name);
+
+    std::string full_name;
+
+    const uint64_t pos_begin_full_name = company_info.find(start_string, pos_end_short_title_name) + start_string.size();
+
+    if (pos_begin_full_name == std::string::npos)
+    {
+        return {};
+    }
+
+    const uint64_t pos_end_full_name = company_info.find(end_string, pos_begin_full_name);
+
+    if (pos_end_full_name == std::string::npos)
+    {
+        return {};
+    }
+
+    full_name = company_info.substr(pos_begin_full_name, pos_end_full_name - pos_begin_full_name);
+
+    std::string full_name_description;
+
+    const uint64_t pos_begin_full_name_description = company_info.find(start_description, pos_end_full_name) + start_description.size();
+
+    if (pos_begin_full_name_description == std::string::npos)
+    {
+        return {};
+    }
+
+    const uint64_t pos_end_full_name_description = company_info.find(end_string, pos_begin_full_name_description);
+
+    if (pos_end_full_name_description == std::string::npos)
+    {
+        return {};
+    }
+
+    full_name_description = company_info.substr(pos_begin_full_name_description, pos_end_full_name_description - pos_begin_full_name_description);
+
+    std::string inn;
+
+    const uint64_t pos_begin_inn = company_info.find(start_string, pos_end_full_name_description) + start_string.size();
+
+    if (pos_begin_inn == std::string::npos)
+    {
+        return {}; 
+    }
+
+    const uint64_t pos_end_inn = company_info.find(end_string, pos_begin_inn);
+
+    if (pos_end_inn == std::string::npos)
+    {
+        return {};
+    }
+
+    inn = company_info.substr(pos_begin_inn, pos_end_inn - pos_begin_inn);
+
+
+    std::string inn_description;
+
+    const uint64_t pos_begin_inn_description = company_info.find(start_description, pos_end_inn) + start_description.size();
+
+    if (pos_begin_inn_description == std::string::npos)
+    {
+        return {};
+    }
+
+    const uint64_t pos_end_inn_description = company_info.find(end_string, pos_begin_inn_description);
+
+    if (pos_end_inn_description == std::string::npos)
+    {
+        return {};
+    }
+
+    inn_description = company_info.substr(pos_begin_inn_description, pos_end_inn_description - pos_begin_inn_description);
+
+    std::string kpp;
+
+    const uint64_t pos_begin_kpp = company_info.find(start_string, pos_end_inn_description) + start_string.size();
+
+    if (pos_begin_kpp == std::string::npos)
+    {
+        return {};
+    }
+
+    const uint64_t pos_end_kpp = company_info.find(end_string, pos_begin_kpp);
+
+    if (pos_end_kpp == std::string::npos)
+    {
+        return {};
+    }
+
+    kpp = company_info.substr(pos_begin_kpp, pos_end_kpp - pos_begin_kpp);
+
+    std::string kpp_description;
+
+    const uint64_t pos_begin_kpp_description = company_info.find(start_description, pos_end_kpp) + start_description.size();
+
+    if (pos_begin_kpp_description == std::string::npos)
+    {
+        return {};
+    }
+
+    const uint64_t pos_end_kpp_description = company_info.find(end_string, pos_begin_kpp_description);
+
+    if (pos_end_kpp_description == std::string::npos)
+    {
+        return {};
+    }
+
+    kpp_description = company_info.substr(pos_begin_kpp_description, pos_end_kpp_description - pos_begin_kpp_description);
+
+    std::string okpo;
+
+    const uint64_t pos_begin_okpo = company_info.find(start_string, pos_end_kpp_description) + start_string.size();
+
+    if (pos_begin_okpo == std::string::npos)
+    {
+        return {};
+    }
+
+    const uint64_t pos_end_okpo = company_info.find(end_string, pos_begin_okpo);
+
+    if (pos_end_okpo == std::string::npos)
+    {
+        return {};
+    }
+
+    okpo = company_info.substr(pos_begin_okpo, pos_end_okpo - pos_begin_okpo);
+
+
+    std::string okpo_description;
+
+    const uint64_t pos_begin_okpo_description = company_info.find(start_description, pos_end_okpo) + start_description.size();
+
+    if (pos_begin_okpo_description == std::string::npos)
+    {
+        return {};
+    }
+
+    const uint64_t pos_end_okpo_description = company_info.find(end_string, pos_begin_okpo_description);
+
+    if (pos_end_okpo_description == std::string::npos)
+    {
+        return {};
+    }
+
+    okpo_description = company_info.substr(pos_begin_okpo_description, pos_end_okpo_description - pos_begin_okpo_description);
+
+    std::string ogrn;
+
+    const uint64_t pos_begin_ogrn = company_info.find(start_string, pos_end_okpo_description) + start_string.size();
+
+    if (pos_begin_ogrn == std::string::npos)
+    {
+        return {};
+    }
+
+    const uint64_t pos_end_ogrn = company_info.find(end_string, pos_begin_ogrn);
+
+    if (pos_end_ogrn == std::string::npos)
+    {
+        return {};
+    }
+
+    ogrn = company_info.substr(pos_begin_ogrn, pos_end_ogrn - pos_begin_ogrn);
+
+
+    std::string ogrn_description;
+
+    const uint64_t pos_begin_ogrn_description = company_info.find(start_description, pos_end_ogrn) + start_description.size();
+
+    if (pos_begin_ogrn_description == std::string::npos)
+    {
+        return {};
+    }
+
+    const uint64_t pos_end_ogrn_description = company_info.find(end_string, pos_begin_ogrn_description);
+
+    if (pos_end_ogrn_description == std::string::npos)
+    {
+        return {};
+    }
+
+    ogrn_description = company_info.substr(pos_begin_ogrn_description, pos_end_ogrn_description - pos_begin_ogrn_description);
+
+    std::string finish = short_title + " " + short_title_name + "\n" + full_name + " " + full_name_description + "\n" + inn + " " + inn_description + "\n"
+    + kpp + " " + kpp_description + "\n" + okpo + " " + okpo_description + "\n" + ogrn + " " + ogrn_description + "\n";
+
+    return finish;
+}   
