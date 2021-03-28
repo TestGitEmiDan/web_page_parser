@@ -2,27 +2,33 @@
 #include <logger.hpp>
 
 #include "parser.hpp"
-#include "../downloder/web_downloader.hpp"
 
-std::vector<std::pair<std::string, std::string>> parser::get_companies_info(const std::string& buffer)
+std::vector<std::pair<std::string, std::string>> parser::get_companies_url_list(const std::string& companies_html)
 {
-    container_.clear();
+    if (companies_html.empty())
+    {
+        log_info(logger::yellow_bold_color, "[parser]", logger::reset_color, ": companies_html is empty");
+    }
 
-    const uint64_t pos_begin = buffer.find("<div data-search=\"top1000-2021\">");
+    company_info_.clear();
+
+    const uint64_t pos_begin = companies_html.find("<div data-search=\"top1000-2021\">");
 
     if (pos_begin == std::string::npos)
     {
+        log_info(logger::yellow_bold_color, "[parser]", logger::reset_color, ":", logger::red_bold_color, "invalid html format", logger::reset_color);
         return {};
     }
 
-    const uint64_t pos_end = buffer.find("<div data-search=\"top1000-2020\">", pos_begin);
+    const uint64_t pos_end = companies_html.find("<div data-search=\"top1000-2020\">", pos_begin);
 
     if (pos_end == std::string::npos)
     {
+        log_info(logger::yellow_bold_color, "[parser]", logger::reset_color, ":", logger::red_bold_color, "invalid html format", logger::reset_color);
         return {};
     }
 
-    std::stringstream ss(buffer.substr(pos_begin, pos_end - pos_begin));
+    std::stringstream ss(companies_html.substr(pos_begin, pos_end - pos_begin));
 
     const std::string company_line = "<a class=\"name\" href=";
     std::string cur_string;
@@ -38,15 +44,28 @@ std::vector<std::pair<std::string, std::string>> parser::get_companies_info(cons
 
         if (!cur_string.compare(pos, company_line.size(), company_line))
         {
-            container_.push_back(parse_company_name_url(cur_string));
+            const auto result{parse_company_name_and_url(cur_string)};
+
+            if (!result.first.empty() && !result.second.empty())
+            {
+                company_info_.push_back(result);
+            }
         }
     }
 
-    return container_;
+    log_info(logger::yellow_bold_color, "[parser]", logger::reset_color, ": found companies [", company_info_.size(), "]");
+
+    return company_info_;
 }
 
-std::pair<std::string, std::string> parser::parse_company_name_url(const std::string& buffer)
+std::pair<std::string, std::string> parser::parse_company_name_and_url(const std::string& company_html)
 {
+    if (company_html.empty())
+    {
+        log_info(logger::yellow_bold_color, "[parser]", logger::reset_color, ": company_html is empty");
+        return {};
+    }
+
     std::string url;
     std::string name_company;
 
@@ -55,53 +74,50 @@ std::pair<std::string, std::string> parser::parse_company_name_url(const std::st
     const std::string start_name_company_attr = "_blank\">";
     const std::string end_name_company_attr = "</a>";
 
-    const uint64_t pos_begin_url = buffer.find(start_url_attr) + start_url_attr.size();
+    const uint64_t pos_begin_url = company_html.find(start_url_attr) + start_url_attr.size();
 
     if (pos_begin_url == std::string::npos)
     {
+        log_info(logger::yellow_bold_color, "[parser]", logger::reset_color, ":", logger::red_bold_color, "invalid html format:", logger::reset_color, company_html);
         return {};
     }
 
-    const uint64_t pos_end_url = buffer.find(end_url_attr, pos_begin_url);
+    const uint64_t pos_end_url = company_html.find(end_url_attr, pos_begin_url);
 
     if (pos_end_url == std::string::npos)
     {
+        log_info(logger::yellow_bold_color, "[parser]", logger::reset_color, ":", logger::red_bold_color, "invalid html format:", logger::reset_color, company_html);
         return {};
     }
 
-    url = buffer.substr(pos_begin_url, pos_end_url - pos_begin_url);
+    url = company_html.substr(pos_begin_url, pos_end_url - pos_begin_url);
 
-    const uint64_t pos_begin_name_company = buffer.find(start_name_company_attr, pos_end_url) + start_name_company_attr.size();
+    const uint64_t pos_begin_name_company = company_html.find(start_name_company_attr, pos_end_url) + start_name_company_attr.size();
 
     if (pos_begin_name_company == std::string::npos)
     {
+        log_info(logger::yellow_bold_color, "[parser]", logger::reset_color, ":", logger::red_bold_color, "invalid html format:", logger::reset_color, company_html);
         return {};
     }
 
-    const uint64_t pos_end_name_company = buffer.find(end_name_company_attr, pos_begin_name_company);
+    const uint64_t pos_end_name_company = company_html.find(end_name_company_attr, pos_begin_name_company);
 
     if (pos_end_name_company == std::string::npos)
     {
+        log_info(logger::yellow_bold_color, "[parser]", logger::reset_color, ":", logger::red_bold_color, "invalid html format:", logger::reset_color, company_html);
         return {};
     }
 
-    name_company = buffer.substr(pos_begin_name_company, pos_end_name_company - pos_begin_name_company);
+    name_company = company_html.substr(pos_begin_name_company, pos_end_name_company - pos_begin_name_company);
 
     return {name_company, url};
 }
 
-std::string parser::get_company_info(const std::string url)
+std::string parser::get_company_info(const std::string company_info)
 {
-    std::string main_url = "https://www.b2b-center.ru" + url;  
-    std::string company_info;                                   
-
-    web_downloder web;
-    web.init();
-
-    web.download(main_url, company_info);
-
     if (company_info.empty())
     {
+        log_info(logger::yellow_bold_color, "[parser]", logger::reset_color, ": company_info is empty");
         return {};
     }
 
@@ -115,6 +131,7 @@ std::string parser::get_company_info(const std::string url)
 
     if (pos_begin_short_title == std::string::npos)
     {
+        log_info(logger::yellow_bold_color, "[parser]", logger::reset_color, ":", logger::red_bold_color, "invalid html format:", logger::reset_color, company_info);
         return {};
     }
 
@@ -122,6 +139,8 @@ std::string parser::get_company_info(const std::string url)
 
     if (pos_end_short_title == std::string::npos)
     {
+        log_info(logger::yellow_bold_color, "[parser]", logger::reset_color, ":", logger::red_bold_color, "invalid html format:", logger::reset_color, company_info);
+
         return {};
     }
 
@@ -133,6 +152,8 @@ std::string parser::get_company_info(const std::string url)
 
     if (pos_begin_short_title_name == std::string::npos)
     {
+        log_info(logger::yellow_bold_color, "[parser]", logger::reset_color, ":", logger::red_bold_color, "invalid html format:", logger::reset_color, company_info);
+
         return {};
     }
 
@@ -140,6 +161,8 @@ std::string parser::get_company_info(const std::string url)
 
     if (pos_end_short_title_name == std::string::npos)
     {
+        log_info(logger::yellow_bold_color, "[parser]", logger::reset_color, ":", logger::red_bold_color, "invalid html format:", logger::reset_color, company_info);
+
         return {};
     }
 
@@ -151,6 +174,8 @@ std::string parser::get_company_info(const std::string url)
 
     if (pos_begin_full_name == std::string::npos)
     {
+        log_info(logger::yellow_bold_color, "[parser]", logger::reset_color, ":", logger::red_bold_color, "invalid html format:", logger::reset_color, company_info);
+
         return {};
     }
 
@@ -158,6 +183,8 @@ std::string parser::get_company_info(const std::string url)
 
     if (pos_end_full_name == std::string::npos)
     {
+        log_info(logger::yellow_bold_color, "[parser]", logger::reset_color, ":", logger::red_bold_color, "invalid html format:", logger::reset_color, company_info);
+
         return {};
     }
 
@@ -169,6 +196,8 @@ std::string parser::get_company_info(const std::string url)
 
     if (pos_begin_full_name_description == std::string::npos)
     {
+        log_info(logger::yellow_bold_color, "[parser]", logger::reset_color, ":", logger::red_bold_color, "invalid html format:", logger::reset_color, company_info);
+
         return {};
     }
 
@@ -176,6 +205,8 @@ std::string parser::get_company_info(const std::string url)
 
     if (pos_end_full_name_description == std::string::npos)
     {
+        log_info(logger::yellow_bold_color, "[parser]", logger::reset_color, ":", logger::red_bold_color, "invalid html format:", logger::reset_color, company_info);
+
         return {};
     }
 
@@ -187,6 +218,8 @@ std::string parser::get_company_info(const std::string url)
 
     if (pos_begin_inn == std::string::npos)
     {
+        log_info(logger::yellow_bold_color, "[parser]", logger::reset_color, ":", logger::red_bold_color, "invalid html format:", logger::reset_color, company_info);
+
         return {}; 
     }
 
@@ -194,6 +227,8 @@ std::string parser::get_company_info(const std::string url)
 
     if (pos_end_inn == std::string::npos)
     {
+        log_info(logger::yellow_bold_color, "[parser]", logger::reset_color, ":", logger::red_bold_color, "invalid html format:", logger::reset_color, company_info);
+
         return {};
     }
 
@@ -206,6 +241,8 @@ std::string parser::get_company_info(const std::string url)
 
     if (pos_begin_inn_description == std::string::npos)
     {
+        log_info(logger::yellow_bold_color, "[parser]", logger::reset_color, ":", logger::red_bold_color, "invalid html format:", logger::reset_color, company_info);
+
         return {};
     }
 
@@ -213,6 +250,8 @@ std::string parser::get_company_info(const std::string url)
 
     if (pos_end_inn_description == std::string::npos)
     {
+        log_info(logger::yellow_bold_color, "[parser]", logger::reset_color, ":", logger::red_bold_color, "invalid html format:", logger::reset_color, company_info);
+
         return {};
     }
 
@@ -224,6 +263,8 @@ std::string parser::get_company_info(const std::string url)
 
     if (pos_begin_kpp == std::string::npos)
     {
+        log_info(logger::yellow_bold_color, "[parser]", logger::reset_color, ":", logger::red_bold_color, "invalid html format:", logger::reset_color, company_info);
+
         return {};
     }
 
@@ -231,6 +272,8 @@ std::string parser::get_company_info(const std::string url)
 
     if (pos_end_kpp == std::string::npos)
     {
+        log_info(logger::yellow_bold_color, "[parser]", logger::reset_color, ":", logger::red_bold_color, "invalid html format:", logger::reset_color, company_info);
+
         return {};
     }
 
@@ -242,6 +285,8 @@ std::string parser::get_company_info(const std::string url)
 
     if (pos_begin_kpp_description == std::string::npos)
     {
+        log_info(logger::yellow_bold_color, "[parser]", logger::reset_color, ":", logger::red_bold_color, "invalid html format:", logger::reset_color, company_info);
+
         return {};
     }
 
@@ -249,6 +294,8 @@ std::string parser::get_company_info(const std::string url)
 
     if (pos_end_kpp_description == std::string::npos)
     {
+        log_info(logger::yellow_bold_color, "[parser]", logger::reset_color, ":", logger::red_bold_color, "invalid html format:", logger::reset_color, company_info);
+
         return {};
     }
 
@@ -260,6 +307,8 @@ std::string parser::get_company_info(const std::string url)
 
     if (pos_begin_okpo == std::string::npos)
     {
+        log_info(logger::yellow_bold_color, "[parser]", logger::reset_color, ":", logger::red_bold_color, "invalid html format:", logger::reset_color, company_info);
+
         return {};
     }
 
@@ -267,6 +316,8 @@ std::string parser::get_company_info(const std::string url)
 
     if (pos_end_okpo == std::string::npos)
     {
+        log_info(logger::yellow_bold_color, "[parser]", logger::reset_color, ":", logger::red_bold_color, "invalid html format:", logger::reset_color, company_info);
+
         return {};
     }
 
@@ -279,6 +330,8 @@ std::string parser::get_company_info(const std::string url)
 
     if (pos_begin_okpo_description == std::string::npos)
     {
+        log_info(logger::yellow_bold_color, "[parser]", logger::reset_color, ":", logger::red_bold_color, "invalid html format:", logger::reset_color, company_info);
+
         return {};
     }
 
@@ -286,6 +339,8 @@ std::string parser::get_company_info(const std::string url)
 
     if (pos_end_okpo_description == std::string::npos)
     {
+        log_info(logger::yellow_bold_color, "[parser]", logger::reset_color, ":", logger::red_bold_color, "invalid html format:", logger::reset_color, company_info);
+
         return {};
     }
 
@@ -297,6 +352,8 @@ std::string parser::get_company_info(const std::string url)
 
     if (pos_begin_ogrn == std::string::npos)
     {
+        log_info(logger::yellow_bold_color, "[parser]", logger::reset_color, ":", logger::red_bold_color, "invalid html format:", logger::reset_color, company_info);
+
         return {};
     }
 
@@ -304,6 +361,8 @@ std::string parser::get_company_info(const std::string url)
 
     if (pos_end_ogrn == std::string::npos)
     {
+        log_info(logger::yellow_bold_color, "[parser]", logger::reset_color, ":", logger::red_bold_color, "invalid html format:", logger::reset_color, company_info);
+
         return {};
     }
 
@@ -316,6 +375,8 @@ std::string parser::get_company_info(const std::string url)
 
     if (pos_begin_ogrn_description == std::string::npos)
     {
+        log_info(logger::yellow_bold_color, "[parser]", logger::reset_color, ":", logger::red_bold_color, "invalid html format:", logger::reset_color, company_info);
+
         return {};
     }
 
@@ -323,6 +384,8 @@ std::string parser::get_company_info(const std::string url)
 
     if (pos_end_ogrn_description == std::string::npos)
     {
+        log_info(logger::yellow_bold_color, "[parser]", logger::reset_color, ":", logger::red_bold_color, "invalid html format:", logger::reset_color, company_info);
+
         return {};
     }
 

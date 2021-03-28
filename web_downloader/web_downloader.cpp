@@ -1,8 +1,10 @@
 #include "web_downloader.hpp"
 
+#include <cstring>
+#include <logger.hpp>
+
 web_downloder::web_downloder() : curl(nullptr)
 {
-
 }
 
 web_downloder::~web_downloder()
@@ -25,28 +27,31 @@ bool web_downloder::init()
     return curl != nullptr;
 }
 
-bool web_downloder::download(const std::string& website, std::string& buffer)
+bool web_downloder::download(const std::string& url, std::string& buffer)
 {
-    CURLcode res;
-
     buffer.clear();
     
     if(curl)
     {
-        curl_easy_setopt(curl, CURLOPT_URL, website.c_str());
+        std::cerr << logger::yellow_bold_color << "[web_downloder]" << logger::reset_color << ": download data from: <" << url << ">" <<" ...";
+
+        curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+        curl_easy_setopt(curl, CURLOPT_BUFFERSIZE, CURL_MAX_READ_SIZE);
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_callback);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, &buffer);
-        res = curl_easy_perform(curl);
 
-        if (res == CURLE_OK)
+        const auto result{curl_easy_perform(curl) == CURLE_OK ? true : false};
+        
+        if (result)
         {
-            return true;
+            std::cerr << logger::green_bold_color << "  SUCCESS\n" << logger::reset_color;
         }
-
         else
         {
-            return false;
+            std::cerr << logger::red_bold_color << "  ERROR\n" << logger::reset_color;
         }
+
+        return result;
     }
 
     return false;
