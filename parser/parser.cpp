@@ -113,286 +113,45 @@ std::pair<std::string, std::string> parser::parse_company_name_and_url(const std
     return {name_company, url};
 }
 
-std::string parser::get_company_info(const std::string company_info)
+std::vector<std::pair<std::string, std::string>> parser::get_company_info(const std::string company_info_html)
 {
-    if (company_info.empty())
+    if (company_info_html.empty())
     {
         log_info(logger::yellow_bold_color, "[parser]", logger::reset_color, ": company_info is empty");
         return {};
     }
 
-    const std::string start_string = "<td class=\"small\">";
-    const std::string end_string = "</td>";
-    const std::string start_description = "<td>";
+    std::vector<std::pair<std::string, std::string>> company_info{{"Краткое наименование", ""},
+    {"Полное наименование", ""},
+    {"ИНН", ""},
+    {"КПП", ""},
+    {"ОКПО", ""},
+    {"ОГРН", ""}};
 
-    std::string short_title;
+    auto pos = 0;
+    const std::string start_tag = "<td>";
+    const std::string end_tag = "</td>";
 
-    const uint64_t pos_begin_short_title = company_info.find(start_string) + start_string.size();
-
-    if (pos_begin_short_title == std::string::npos)
+    for (auto& info : company_info)
     {
-        log_info(logger::yellow_bold_color, "[parser]", logger::reset_color, ":", logger::red_bold_color, "invalid html format:", logger::reset_color, company_info);
-        return {};
+        const auto begin_pos = company_info_html.find(info.first, pos) + info.first.size() + start_tag.size() + end_tag.size();
+
+        if (begin_pos == std::string::npos)
+        {
+            log_info(logger::yellow_bold_color, "[parser]", logger::reset_color, ":", logger::red_bold_color, "invalid html format:", logger::reset_color, company_info_html);
+            return {};
+        }
+
+        const auto end_pos = company_info_html.find(end_tag, begin_pos);
+
+        if (end_pos == std::string::npos)
+        {
+            log_info(logger::yellow_bold_color, "[parser]", logger::reset_color, ":", logger::red_bold_color, "invalid html format:", logger::reset_color, company_info_html);
+            return {};
+        }
+
+        info.second = company_info_html.substr(begin_pos, end_pos - begin_pos);
     }
 
-    const uint64_t pos_end_short_title = company_info.find(end_string, pos_begin_short_title);
-
-    if (pos_end_short_title == std::string::npos)
-    {
-        log_info(logger::yellow_bold_color, "[parser]", logger::reset_color, ":", logger::red_bold_color, "invalid html format:", logger::reset_color, company_info);
-
-        return {};
-    }
-
-    short_title = company_info.substr(pos_begin_short_title, pos_end_short_title - pos_begin_short_title);
-
-    std::string short_title_name;
-
-    const uint64_t pos_begin_short_title_name = company_info.find(start_description, pos_end_short_title) + start_description.size();
-
-    if (pos_begin_short_title_name == std::string::npos)
-    {
-        log_info(logger::yellow_bold_color, "[parser]", logger::reset_color, ":", logger::red_bold_color, "invalid html format:", logger::reset_color, company_info);
-
-        return {};
-    }
-
-    const uint64_t pos_end_short_title_name = company_info.find(end_string, pos_begin_short_title_name);
-
-    if (pos_end_short_title_name == std::string::npos)
-    {
-        log_info(logger::yellow_bold_color, "[parser]", logger::reset_color, ":", logger::red_bold_color, "invalid html format:", logger::reset_color, company_info);
-
-        return {};
-    }
-
-    short_title_name = company_info.substr(pos_begin_short_title_name, pos_end_short_title_name - pos_begin_short_title_name);
-
-    std::string full_name;
-
-    const uint64_t pos_begin_full_name = company_info.find(start_string, pos_end_short_title_name) + start_string.size();
-
-    if (pos_begin_full_name == std::string::npos)
-    {
-        log_info(logger::yellow_bold_color, "[parser]", logger::reset_color, ":", logger::red_bold_color, "invalid html format:", logger::reset_color, company_info);
-
-        return {};
-    }
-
-    const uint64_t pos_end_full_name = company_info.find(end_string, pos_begin_full_name);
-
-    if (pos_end_full_name == std::string::npos)
-    {
-        log_info(logger::yellow_bold_color, "[parser]", logger::reset_color, ":", logger::red_bold_color, "invalid html format:", logger::reset_color, company_info);
-
-        return {};
-    }
-
-    full_name = company_info.substr(pos_begin_full_name, pos_end_full_name - pos_begin_full_name);
-
-    std::string full_name_description;
-
-    const uint64_t pos_begin_full_name_description = company_info.find(start_description, pos_end_full_name) + start_description.size();
-
-    if (pos_begin_full_name_description == std::string::npos)
-    {
-        log_info(logger::yellow_bold_color, "[parser]", logger::reset_color, ":", logger::red_bold_color, "invalid html format:", logger::reset_color, company_info);
-
-        return {};
-    }
-
-    const uint64_t pos_end_full_name_description = company_info.find(end_string, pos_begin_full_name_description);
-
-    if (pos_end_full_name_description == std::string::npos)
-    {
-        log_info(logger::yellow_bold_color, "[parser]", logger::reset_color, ":", logger::red_bold_color, "invalid html format:", logger::reset_color, company_info);
-
-        return {};
-    }
-
-    full_name_description = company_info.substr(pos_begin_full_name_description, pos_end_full_name_description - pos_begin_full_name_description);
-
-    std::string inn;
-
-    const uint64_t pos_begin_inn = company_info.find(start_string, pos_end_full_name_description) + start_string.size();
-
-    if (pos_begin_inn == std::string::npos)
-    {
-        log_info(logger::yellow_bold_color, "[parser]", logger::reset_color, ":", logger::red_bold_color, "invalid html format:", logger::reset_color, company_info);
-
-        return {}; 
-    }
-
-    const uint64_t pos_end_inn = company_info.find(end_string, pos_begin_inn);
-
-    if (pos_end_inn == std::string::npos)
-    {
-        log_info(logger::yellow_bold_color, "[parser]", logger::reset_color, ":", logger::red_bold_color, "invalid html format:", logger::reset_color, company_info);
-
-        return {};
-    }
-
-    inn = company_info.substr(pos_begin_inn, pos_end_inn - pos_begin_inn);
-
-
-    std::string inn_description;
-
-    const uint64_t pos_begin_inn_description = company_info.find(start_description, pos_end_inn) + start_description.size();
-
-    if (pos_begin_inn_description == std::string::npos)
-    {
-        log_info(logger::yellow_bold_color, "[parser]", logger::reset_color, ":", logger::red_bold_color, "invalid html format:", logger::reset_color, company_info);
-
-        return {};
-    }
-
-    const uint64_t pos_end_inn_description = company_info.find(end_string, pos_begin_inn_description);
-
-    if (pos_end_inn_description == std::string::npos)
-    {
-        log_info(logger::yellow_bold_color, "[parser]", logger::reset_color, ":", logger::red_bold_color, "invalid html format:", logger::reset_color, company_info);
-
-        return {};
-    }
-
-    inn_description = company_info.substr(pos_begin_inn_description, pos_end_inn_description - pos_begin_inn_description);
-
-    std::string kpp;
-
-    const uint64_t pos_begin_kpp = company_info.find(start_string, pos_end_inn_description) + start_string.size();
-
-    if (pos_begin_kpp == std::string::npos)
-    {
-        log_info(logger::yellow_bold_color, "[parser]", logger::reset_color, ":", logger::red_bold_color, "invalid html format:", logger::reset_color, company_info);
-
-        return {};
-    }
-
-    const uint64_t pos_end_kpp = company_info.find(end_string, pos_begin_kpp);
-
-    if (pos_end_kpp == std::string::npos)
-    {
-        log_info(logger::yellow_bold_color, "[parser]", logger::reset_color, ":", logger::red_bold_color, "invalid html format:", logger::reset_color, company_info);
-
-        return {};
-    }
-
-    kpp = company_info.substr(pos_begin_kpp, pos_end_kpp - pos_begin_kpp);
-
-    std::string kpp_description;
-
-    const uint64_t pos_begin_kpp_description = company_info.find(start_description, pos_end_kpp) + start_description.size();
-
-    if (pos_begin_kpp_description == std::string::npos)
-    {
-        log_info(logger::yellow_bold_color, "[parser]", logger::reset_color, ":", logger::red_bold_color, "invalid html format:", logger::reset_color, company_info);
-
-        return {};
-    }
-
-    const uint64_t pos_end_kpp_description = company_info.find(end_string, pos_begin_kpp_description);
-
-    if (pos_end_kpp_description == std::string::npos)
-    {
-        log_info(logger::yellow_bold_color, "[parser]", logger::reset_color, ":", logger::red_bold_color, "invalid html format:", logger::reset_color, company_info);
-
-        return {};
-    }
-
-    kpp_description = company_info.substr(pos_begin_kpp_description, pos_end_kpp_description - pos_begin_kpp_description);
-
-    std::string okpo;
-
-    const uint64_t pos_begin_okpo = company_info.find(start_string, pos_end_kpp_description) + start_string.size();
-
-    if (pos_begin_okpo == std::string::npos)
-    {
-        log_info(logger::yellow_bold_color, "[parser]", logger::reset_color, ":", logger::red_bold_color, "invalid html format:", logger::reset_color, company_info);
-
-        return {};
-    }
-
-    const uint64_t pos_end_okpo = company_info.find(end_string, pos_begin_okpo);
-
-    if (pos_end_okpo == std::string::npos)
-    {
-        log_info(logger::yellow_bold_color, "[parser]", logger::reset_color, ":", logger::red_bold_color, "invalid html format:", logger::reset_color, company_info);
-
-        return {};
-    }
-
-    okpo = company_info.substr(pos_begin_okpo, pos_end_okpo - pos_begin_okpo);
-
-
-    std::string okpo_description;
-
-    const uint64_t pos_begin_okpo_description = company_info.find(start_description, pos_end_okpo) + start_description.size();
-
-    if (pos_begin_okpo_description == std::string::npos)
-    {
-        log_info(logger::yellow_bold_color, "[parser]", logger::reset_color, ":", logger::red_bold_color, "invalid html format:", logger::reset_color, company_info);
-
-        return {};
-    }
-
-    const uint64_t pos_end_okpo_description = company_info.find(end_string, pos_begin_okpo_description);
-
-    if (pos_end_okpo_description == std::string::npos)
-    {
-        log_info(logger::yellow_bold_color, "[parser]", logger::reset_color, ":", logger::red_bold_color, "invalid html format:", logger::reset_color, company_info);
-
-        return {};
-    }
-
-    okpo_description = company_info.substr(pos_begin_okpo_description, pos_end_okpo_description - pos_begin_okpo_description);
-
-    std::string ogrn;
-
-    const uint64_t pos_begin_ogrn = company_info.find(start_string, pos_end_okpo_description) + start_string.size();
-
-    if (pos_begin_ogrn == std::string::npos)
-    {
-        log_info(logger::yellow_bold_color, "[parser]", logger::reset_color, ":", logger::red_bold_color, "invalid html format:", logger::reset_color, company_info);
-
-        return {};
-    }
-
-    const uint64_t pos_end_ogrn = company_info.find(end_string, pos_begin_ogrn);
-
-    if (pos_end_ogrn == std::string::npos)
-    {
-        log_info(logger::yellow_bold_color, "[parser]", logger::reset_color, ":", logger::red_bold_color, "invalid html format:", logger::reset_color, company_info);
-
-        return {};
-    }
-
-    ogrn = company_info.substr(pos_begin_ogrn, pos_end_ogrn - pos_begin_ogrn);
-
-
-    std::string ogrn_description;
-
-    const uint64_t pos_begin_ogrn_description = company_info.find(start_description, pos_end_ogrn) + start_description.size();
-
-    if (pos_begin_ogrn_description == std::string::npos)
-    {
-        log_info(logger::yellow_bold_color, "[parser]", logger::reset_color, ":", logger::red_bold_color, "invalid html format:", logger::reset_color, company_info);
-
-        return {};
-    }
-
-    const uint64_t pos_end_ogrn_description = company_info.find(end_string, pos_begin_ogrn_description);
-
-    if (pos_end_ogrn_description == std::string::npos)
-    {
-        log_info(logger::yellow_bold_color, "[parser]", logger::reset_color, ":", logger::red_bold_color, "invalid html format:", logger::reset_color, company_info);
-
-        return {};
-    }
-
-    ogrn_description = company_info.substr(pos_begin_ogrn_description, pos_end_ogrn_description - pos_begin_ogrn_description);
-
-    std::string finish = short_title + " " + short_title_name + "\n" + full_name + " " + full_name_description + "\n" + inn + " " + inn_description + "\n"
-    + kpp + " " + kpp_description + "\n" + okpo + " " + okpo_description + "\n" + ogrn + " " + ogrn_description + "\n";
-
-    return finish;
+    return company_info;
 }   

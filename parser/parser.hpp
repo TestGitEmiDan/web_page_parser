@@ -6,9 +6,9 @@
 
 class parser
 {
-public:
+public:    
     std::vector<std::pair<std::string, std::string>> get_companies_url_list(const std::string& companies_html);
-    std::string get_company_info(const std::string company_html);
+   std::vector<std::pair<std::string, std::string>> get_company_info(const std::string company_html);
 
 private:
     static std::pair<std::string, std::string> parse_company_name_and_url(const std::string& company_html);
