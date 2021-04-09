@@ -69,9 +69,9 @@ std::vector<std::pair<std::string, std::string>> company_info_parser::parse_comp
       continue;
     }
 
-    if (!cur_string.compare(pos, company_line.size(), company_line))
+    if (cur_string.compare(pos, company_line.size(), company_line) == 0)
     {
-      const auto result{parse_company_name_and_url(cur_string)};
+      const auto result = parse_company_name_and_url(cur_string);
 
       if (!result.first.empty() && !result.second.empty())
       {

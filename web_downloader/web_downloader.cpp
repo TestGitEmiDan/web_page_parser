@@ -40,8 +40,7 @@ bool web_downloder::download(const std::string& url, std::string& buffer)
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_callback);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, &buffer);
 
-        const auto r{curl_easy_perform(curl)};
-        const auto result{r == CURLE_OK ? true : false};
+        const auto result = curl_easy_perform(curl) == CURLE_OK ? true : false;
         
         if (result)
         {
