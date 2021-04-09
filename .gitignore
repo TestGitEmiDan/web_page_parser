@@ -1,6 +1,4 @@
 *.out
-*.txt
 *.csv
-main.cpp
 .vscode
 makefile

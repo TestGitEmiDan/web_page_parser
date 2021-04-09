@@ -25,6 +25,8 @@ public:
     std::string kpp;
     std::string okpo;
     std::string ogrn;
+
+    bool is_valid() const;
   };
 
   static std::vector<std::pair<std::string, std::string>> parse_companies_url_list(const std::string& companies_html);

@@ -4,13 +4,18 @@
 
 #include <logger.hpp>
 
-const std::vector<std::pair<company_info_parser::company_info_attr, std::string>> company_info_parser::company_info_attrs{
-    {SHORT_NAME, "Краткое наименование"},
-    {FULL_NAME, "Полное наименование"},
-    {INN, "ИНН"},
-    {KPP, "КПП"},
-    {OKPO, "ОКПО"},
-    {OGRN, "ОГРН"}};
+const std::vector<std::pair<company_info_parser::company_info_attr, std::string>>
+    company_info_parser::company_info_attrs{{SHORT_NAME, "Краткое наименование"},
+                                            {FULL_NAME, "Полное наименование"},
+                                            {INN, "ИНН"},
+                                            {KPP, "КПП"},
+                                            {OKPO, "ОКПО"},
+                                            {OGRN, "ОГРН"}};
+
+bool company_info_parser::company_info::is_valid() const
+{
+  return !short_name.empty() || !full_name.empty() || !inn.empty() || !kpp.empty() || !okpo.empty() || !ogrn.empty();
+}
 
 std::vector<std::pair<std::string, std::string>> company_info_parser::parse_companies_url_list(
     const std::string& companies_html)
@@ -183,21 +188,14 @@ company_info_parser::company_info company_info_parser::parse_company_info(const 
 
   for (auto& attr : company_info_attrs)
   {
-    const auto begin_pos =
-        company_info_html.find(attr.second, start_pos) + attr.second.size() + start_tag.size() + end_tag.size();
+    auto begin_pos = company_info_html.find(attr.second, start_pos);
 
     if (begin_pos == std::string::npos)
     {
-      log_info(logger::yellow_bold_color,
-               "[parser]",
-               logger::reset_color,
-               ":",
-               logger::red_bold_color,
-               "invalid html format:",
-               logger::reset_color,
-               company_info_html);
-      return {};
+      continue;
     }
+
+    begin_pos += attr.second.size() + start_tag.size() + end_tag.size();
 
     const auto end_pos = company_info_html.find(end_tag, begin_pos);
 
