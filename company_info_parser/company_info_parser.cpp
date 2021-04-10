@@ -12,6 +12,7 @@ const std::vector<std::pair<company_info_parser::company_info_attr, std::string>
                                             {OKPO, "ОКПО"},
                                             {OGRN, "ОГРН"}};
 
+
 bool company_info_parser::company_info::is_valid() const
 {
   return !short_name.empty() || !full_name.empty() || !inn.empty() || !kpp.empty() || !okpo.empty() || !ogrn.empty();
